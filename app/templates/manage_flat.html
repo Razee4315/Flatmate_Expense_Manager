@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Manage Flat</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Create Flat Form -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Create a New Flat</h5>
+                        <form method="POST" action="{{ url_for('main.manage_flat') }}">
+                            <input type="hidden" name="action" value="create">
+                            <div class="mb-3">
+                                <label for="flat_name" class="form-label">Flat Name</label>
+                                <input type="text" class="form-control" id="flat_name" name="flat_name" required>
+                                <div class="form-text">Give your flat a unique name.</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Flat</button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <!-- Join Flat Form -->
+                    <div>
+                        <h5 class="mb-3">Join an Existing Flat</h5>
+                        {% if available_flats %}
+                            <form method="POST" action="{{ url_for('main.manage_flat') }}">
+                                <input type="hidden" name="action" value="join">
+                                <div class="mb-3">
+                                    <label for="flat_id" class="form-label">Select a Flat</label>
+                                    <select class="form-select" id="flat_id" name="flat_id" required>
+                                        <option value="">Choose a flat...</option>
+                                        {% for flat in available_flats %}
+                                            <option value="{{ flat.id }}">
+                                                {{ flat.name }} ({{ flat.members|length }} members)
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Select the flat you want to join.</div>
+                                </div>
+                                <button type="submit" class="btn btn-success">Join Selected Flat</button>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-info">
+                                No flats available to join. Create a new one!
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}

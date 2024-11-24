@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block styles %}
+<style>
+.stat-card {
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+.activity-item {
+    transition: background-color 0.2s;
+}
+.activity-item:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Stats Row -->
+    <div class="row g-4 mb-4">
+        <!-- Total Flat Expenses -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Total Flat Expenses</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(total_flat_expenses) }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-home fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Expenses -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Personal Expenses</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(personal_expenses) }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-user fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- You Owe -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">You Owe</h6>
+                            <h3 class="mb-0 text-danger">${{ "%.2f"|format(my_unpaid) }}</h3>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-arrow-up fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Owed to You -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Owed to You</h6>
+                            <h3 class="mb-0 text-success">${{ "%.2f"|format(owed_to_me) }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-arrow-down fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Monthly Expenses Chart -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Monthly Expenses</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyExpensesChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Categories Chart -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Expense Categories</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoriesChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity and Members Row -->
+    <div class="row g-4">
+        <!-- Recent Activity -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activities %}
+                        <div class="list-group-item activity-item">
+                            {% if activity.type == 'expense' %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-primary me-2">Expense</span>
+                                    <strong>{{ activity.user.username }}</strong>
+                                    added expense for
+                                    <strong>${{ "%.2f"|format(activity.amount) }}</strong>
+                                    <span class="text-muted">({{ activity.category }})</span>
+                                </div>
+                                <small class="text-muted">{{ activity.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <small class="text-muted">{{ activity.description }}</small>
+                            {% else %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-success me-2">Payment</span>
+                                    <strong>{{ activity.payer.username }}</strong>
+                                    paid
+                                    <strong>${{ "%.2f"|format(activity.amount) }}</strong>
+                                    to
+                                    <strong>{{ activity.recipient.username }}</strong>
+                                </div>
+                                <small class="text-muted">{{ activity.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flatmates -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Flatmates</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for flatmate in flatmates %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle fa-2x text-muted me-3"></i>
+                                    <div>
+                                        <h6 class="mb-0">{{ flatmate.username }}</h6>
+                                        <small class="text-muted">
+                                            Total Expenses: ${{ "%.2f"|format(user_expenses[flatmate.id]) }}
+                                        </small>
+                                    </div>
+                                </div>
+                                {% if flatmate.id != current_user.id %}
+                                <a href="{{ url_for('main.settle_balances') }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-exchange-alt me-1"></i>Settle
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly Expenses Chart
+const monthlyCtx = document.getElementById('monthlyExpensesChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: {{ months_data|map(attribute='month')|list|tojson }},
+        datasets: [{
+            label: 'Monthly Expenses',
+            data: {{ months_data|map(attribute='amount')|list|tojson }},
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+            fill: true,
+            backgroundColor: 'rgba(75, 192, 192, 0.1)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Categories Chart
+const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
+new Chart(categoriesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ categories_data.keys()|list|tojson }},
+        datasets: [{
+            data: {{ categories_data.values()|list|tojson }},
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

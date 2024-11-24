@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-user-plus text-primary me-2"></i>
+                    Create Account
+                </h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_flat_leader" name="is_flat_leader">
+                            <label class="form-check-label" for="is_flat_leader">
+                                I am creating a new flat (Flat Leader)
+                            </label>
+                        </div>
+                    </div>
+                    <div id="flat_details" class="mb-3 d-none">
+                        <label for="flat_name" class="form-label">Flat Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-home"></i></span>
+                            <input type="text" class="form-control" id="flat_name" name="flat_name">
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>Sign Up
+                        </button>
+                        <a href="#" class="btn btn-outline-danger">
+                            <i class="fab fa-google me-2"></i>Sign up with Google
+                        </a>
+                    </div>
+                </form>
+                <hr>
+                <p class="text-center mb-0">
+                    Already have an account? 
+                    <a href="{{ url_for('auth.login') }}" class="text-primary">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('is_flat_leader').addEventListener('change', function() {
+        const flatDetails = document.getElementById('flat_details');
+        const flatNameInput = document.getElementById('flat_name');
+        
+        if (this.checked) {
+            flatDetails.classList.remove('d-none');
+            flatNameInput.required = true;
+        } else {
+            flatDetails.classList.add('d-none');
+            flatNameInput.required = false;
+        }
+    });
+</script>
+{% endblock %}

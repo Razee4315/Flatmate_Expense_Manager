@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Settle Balances{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Overall Balances Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>Overall Balances
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if balances %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Flatmate</th>
+                                    <th class="text-end">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_id, amount in balances.items() %}
+                                {% if amount != 0 %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-circle fa-2x text-muted me-2"></i>
+                                            {{ users[user_id].username }}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if amount > 0 %}
+                                        <span class="text-success">Gets ${{ "%.2f"|format(amount) }}</span>
+                                        {% else %}
+                                        <span class="text-danger">Owes ${{ "%.2f"|format(amount|abs) }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>No balances to settle.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Detailed Transactions Card -->
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exchange-alt me-2"></i>Detailed Transactions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if transactions %}
+                    <div class="list-group">
+                        {% for transaction in transactions %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-user text-muted me-2"></i>
+                                    <strong>{{ transaction.debtor.username }}</strong>
+                                    <span class="text-muted mx-2">owes</span>
+                                    <strong>{{ transaction.creditor.username }}</strong>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="h5 mb-0 text-danger me-3">${{ "%.2f"|format(transaction.amount) }}</span>
+                                    {% if transaction.debtor.id == current_user.id %}
+                                    <button type="button" class="btn btn-success btn-sm" 
+                                            onclick="showPaymentModal({{ transaction.creditor.id }}, {{ transaction.amount }})">
+                                        <i class="fas fa-check me-1"></i>Pay
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>No transactions to show.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to mark this payment as complete?</p>
+                <p class="mb-0">Amount: $<span id="paymentAmount"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitPayment()">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentUserId = null;
+let currentAmount = null;
+
+function showPaymentModal(userId, amount) {
+    currentUserId = userId;
+    currentAmount = amount;
+    document.getElementById('paymentAmount').textContent = amount.toFixed(2);
+    new bootstrap.Modal(document.getElementById('paymentModal')).show();
+}
+
+function submitPayment() {
+    if (!currentUserId || !currentAmount) return;
+    
+    fetch(`/mark_paid/${currentUserId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `amount=${currentAmount}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error marking payment as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error marking payment as complete');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Add Expense{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Expense
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="expenseForm" novalidate>
+                    <!-- Basic Info Section -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Basic Information</h6>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-pen"></i></span>
+                                <input type="text" class="form-control" id="description" name="description" required
+                                       placeholder="e.g., Groceries from Walmart" minlength="3">
+                                <div class="invalid-feedback">
+                                    Please provide a description (at least 3 characters).
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="amount" class="form-label">Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" class="form-control" id="amount" name="amount" required
+                                           placeholder="0.00" min="0.01">
+                                    <div class="invalid-feedback">
+                                        Please enter a valid amount greater than 0.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select a category</option>
+                                        <option value="Groceries" data-icon="shopping-cart">Groceries</option>
+                                        <option value="Rent" data-icon="home">Rent</option>
+                                        <option value="Utilities" data-icon="bolt">Utilities</option>
+                                        <option value="Internet" data-icon="wifi">Internet</option>
+                                        <option value="Entertainment" data-icon="film">Entertainment</option>
+                                        <option value="Transportation" data-icon="car">Transportation</option>
+                                        <option value="Food" data-icon="utensils">Food & Dining</option>
+                                        <option value="Others" data-icon="ellipsis-h">Others</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select a category.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Receipt Upload -->
+                        <div class="mb-3">
+                            <label for="receipt" class="form-label">Receipt Image (Optional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-receipt"></i></span>
+                                <input type="file" class="form-control" id="receipt" name="receipt" 
+                                       accept="image/*" onchange="previewReceipt(event)">
+                            </div>
+                            <div id="receiptPreview" class="mt-2 d-none">
+                                <img src="" alt="Receipt preview" class="img-thumbnail" style="max-height: 200px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Splitting Section -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Expense Sharing</h6>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_shared" name="is_shared" checked>
+                                <label class="form-check-label" for="is_shared">Split with flatmates?</label>
+                            </div>
+                        </div>
+
+                        <div id="split_details" class="mb-3">
+                            <div class="mb-3">
+                                <label class="form-label d-block">Split Type</label>
+                                <div class="btn-group" role="group">
+                                    <input type="radio" class="btn-check" name="split_type" id="split_equal" value="equal" checked>
+                                    <label class="btn btn-outline-primary" for="split_equal">
+                                        <i class="fas fa-equals me-1"></i>Equal Split
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="split_type" id="split_custom" value="custom">
+                                    <label class="btn btn-outline-primary" for="split_custom">
+                                        <i class="fas fa-sliders-h me-1"></i>Custom Split
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="equal_split">
+                                        {% for flatmate in flatmates %}
+                                        {% if flatmate.id != current_user.id %}
+                                        <div class="form-check">
+                                            <input class="form-check-input member-checkbox" type="checkbox" 
+                                                   name="members" value="{{ flatmate.id }}" 
+                                                   id="member_{{ flatmate.id }}" checked
+                                                   data-name="{{ flatmate.username }}">
+                                            <label class="form-check-label" for="member_{{ flatmate.id }}">
+                                                {{ flatmate.username }}
+                                            </label>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+
+                                    <div id="custom_split" class="d-none">
+                                        {% for flatmate in flatmates %}
+                                        {% if flatmate.id != current_user.id %}
+                                        <div class="mb-2">
+                                            <label class="form-label">{{ flatmate.username }}</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" step="0.01" class="form-control custom-share"
+                                                       name="custom_share_{{ flatmate.id }}" 
+                                                       id="custom_share_{{ flatmate.id }}"
+                                                       placeholder="0.00" disabled>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Expense Summary</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <p class="mb-1"><strong>Total Amount:</strong> <span id="preview_amount">$0.00</span></p>
+                                        <p class="mb-1"><strong>Category:</strong> <span id="preview_category">-</span></p>
+                                        <p class="mb-1"><strong>Split Type:</strong> <span id="preview_split_type">Equal</span></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <p class="mb-1"><strong>Your Share:</strong> <span id="preview_your_share">$0.00</span></p>
+                                        <p class="mb-1"><strong>Split With:</strong> <span id="preview_members">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Expense
+                        </button>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(() => {
+    'use strict'
+    const form = document.getElementById('expenseForm');
+    form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+})();
+
+// Receipt preview
+function previewReceipt(event) {
+    const preview = document.getElementById('receiptPreview');
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.querySelector('img').src = e.target.result;
+            preview.classList.remove('d-none');
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('d-none');
+    }
+}
+
+// Expense sharing logic
+const isSharedCheckbox = document.getElementById('is_shared');
+const splitDetails = document.getElementById('split_details');
+const equalSplitDiv = document.getElementById('equal_split');
+const customSplitDiv = document.getElementById('custom_split');
+const splitTypeRadios = document.getElementsByName('split_type');
+const customShareInputs = document.querySelectorAll('.custom-share');
+const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+
+// Toggle split details
+isSharedCheckbox.addEventListener('change', function() {
+    splitDetails.style.display = this.checked ? 'block' : 'none';
+    updatePreview();
+});
+
+// Toggle split type
+splitTypeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'equal') {
+            equalSplitDiv.classList.remove('d-none');
+            customSplitDiv.classList.add('d-none');
+            customShareInputs.forEach(input => input.disabled = true);
+            memberCheckboxes.forEach(cb => cb.disabled = false);
+        } else {
+            equalSplitDiv.classList.add('d-none');
+            customSplitDiv.classList.remove('d-none');
+            customShareInputs.forEach(input => input.disabled = false);
+            memberCheckboxes.forEach(cb => cb.disabled = true);
+        }
+        updatePreview();
+    });
+});
+
+// Update preview
+function updatePreview() {
+    const amount = document.getElementById('amount').value || 0;
+    const category = document.getElementById('category');
+    const selectedCategory = category.options[category.selectedIndex]?.text || '-';
+    const isShared = document.getElementById('is_shared').checked;
+    const splitType = document.querySelector('input[name="split_type"]:checked').value;
+    
+    document.getElementById('preview_amount').textContent = `$${parseFloat(amount).toFixed(2)}`;
+    document.getElementById('preview_category').textContent = selectedCategory;
+    document.getElementById('preview_split_type').textContent = isShared ? 
+        (splitType === 'equal' ? 'Equal Split' : 'Custom Split') : 'Not Split';
+
+    // Calculate shares
+    if (isShared && amount) {
+        if (splitType === 'equal') {
+            const checkedMembers = document.querySelectorAll('.member-checkbox:checked');
+            const totalMembers = checkedMembers.length + 1; // +1 for current user
+            const shareAmount = amount / totalMembers;
+            
+            document.getElementById('preview_your_share').textContent = `$${shareAmount.toFixed(2)}`;
+            document.getElementById('preview_members').textContent = 
+                Array.from(checkedMembers).map(cb => cb.dataset.name).join(', ');
+        } else {
+            let totalCustomShares = 0;
+            customShareInputs.forEach(input => {
+                if (!input.disabled && input.value) {
+                    totalCustomShares += parseFloat(input.value);
+                }
+            });
+            const yourShare = amount - totalCustomShares;
+            document.getElementById('preview_your_share').textContent = `$${yourShare.toFixed(2)}`;
+            document.getElementById('preview_members').textContent = 'Custom split';
+        }
+    } else {
+        document.getElementById('preview_your_share').textContent = `$${parseFloat(amount).toFixed(2)}`;
+        document.getElementById('preview_members').textContent = '-';
+    }
+}
+
+// Update preview on input changes
+document.getElementById('amount').addEventListener('input', updatePreview);
+document.getElementById('category').addEventListener('change', updatePreview);
+memberCheckboxes.forEach(cb => cb.addEventListener('change', updatePreview));
+customShareInputs.forEach(input => input.addEventListener('input', updatePreview));
+
+// Initialize preview
+updatePreview();
+
+// Update category icon
+document.getElementById('category').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.dataset.icon) {
+        const icon = this.previousElementSibling.querySelector('i');
+        icon.className = `fas fa-${selectedOption.dataset.icon}`;
+    }
+});
+</script>
+{% endblock %}
