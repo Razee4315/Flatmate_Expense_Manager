@@ -91,10 +91,3 @@ This project is open source and available under the [MIT License](LICENSE).
 
 - GitHub: [@Razee4315](https://github.com/Razee4315)
 
-## 🔮 Future Features
-
-- Mobile app version
-- Integration with payment systems
-- Receipt scanning and automatic expense entry
-- Monthly expense reports and analytics
-- Budget planning tools
