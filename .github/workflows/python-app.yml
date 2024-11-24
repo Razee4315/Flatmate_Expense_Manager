@@ -7,8 +7,12 @@ on:
     branches: [ "master" ]
 
 permissions:
-  contents: read
+  contents: write
   packages: write
+  actions: write
+  checks: write
+  pull-requests: write
+  statuses: write
 
 jobs:
   build:
@@ -16,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Set up Python 3.10
       uses: actions/setup-python@v5
@@ -29,11 +35,9 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
     - name: Lint with flake8
-      continue-on-error: true  # Allow the workflow to continue even if linting fails
+      continue-on-error: true
       run: |
-        # Only check for critical errors (syntax errors and undefined names)
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --extend-ignore=F821,E999
-        # Run a more comprehensive check but don't fail the build
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Run Tests
@@ -47,6 +51,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Log in to GitHub Container Registry
       uses: docker/login-action@v3
