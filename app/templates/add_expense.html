@@ -299,3 +299,7 @@ document.getElementById('category').addEventListener('change', function() {
 });
 </script>
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/expense.js') }}"></script>
+{% endblock %}
