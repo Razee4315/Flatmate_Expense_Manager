@@ -79,13 +79,18 @@ def dashboard():
     
     # Add expenses to activity
     for expense in expenses[:10]:  # Last 10 expenses
+        user = User.query.get(expense.creator_id)
         recent_activities.append({
             'type': 'expense',
             'date': expense.date,
-            'user': User.query.get(expense.creator_id),
+            'user': {
+                'id': user.id,
+                'username': user.username
+            },
             'description': expense.description,
             'amount': expense.amount,
-            'category': expense.category
+            'category': expense.category,
+            'id': expense.id
         })
     
     # Add recent payments to activity
@@ -383,3 +388,88 @@ def mark_paid(user_id):
     
     db.session.commit()
     return redirect(url_for('main.settle_balances'))
+
+@main.route('/delete_expense/<int:expense_id>', methods=['POST'])
+@login_required
+def delete_expense(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+    
+    # Check if the user is authorized to delete this expense
+    if expense.creator_id != current_user.id and not current_user.is_flat_leader:
+        flash('You are not authorized to delete this expense.', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Delete associated expense shares first
+    ExpenseShare.query.filter_by(expense_id=expense_id).delete()
+    
+    # Delete the expense
+    db.session.delete(expense)
+    db.session.commit()
+    
+    flash('Expense deleted successfully.', 'success')
+    return redirect(url_for('main.dashboard'))
+
+@main.route('/edit_expense/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+    
+    # Check if the user is authorized to edit this expense
+    if expense.creator_id != current_user.id and not current_user.is_flat_leader:
+        flash('You are not authorized to edit this expense.', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    if request.method == 'POST':
+        expense.description = request.form.get('description')
+        expense.amount = float(request.form.get('amount'))
+        expense.category = request.form.get('category')
+        expense.is_shared = request.form.get('is_shared') == 'on'
+        
+        # Update expense shares if it's a shared expense
+        if expense.is_shared:
+            # Delete existing shares
+            ExpenseShare.query.filter_by(expense_id=expense_id).delete()
+            
+            split_type = request.form.get('split_type', 'equal')
+            if split_type == 'equal':
+                member_ids = request.form.getlist('members')
+                if not member_ids:
+                    flash('Please select at least one member to share the expense with.', 'error')
+                    return redirect(url_for('main.edit_expense', expense_id=expense_id))
+                
+                # Add creator to the split if not already included
+                member_ids = [str(id) for id in member_ids]
+                if str(current_user.id) not in member_ids:
+                    member_ids.append(str(current_user.id))
+                
+                # Calculate equal shares
+                share_amount = expense.amount / len(member_ids)
+                
+                # Create new expense shares
+                for member_id in member_ids:
+                    share = ExpenseShare(
+                        expense_id=expense.id,
+                        user_id=int(member_id),
+                        share_amount=share_amount,
+                        is_paid=False
+                    )
+                    db.session.add(share)
+            else:  # Custom split
+                for key, value in request.form.items():
+                    if key.startswith('custom_share_'):
+                        user_id = int(key.replace('custom_share_', ''))
+                        share_amount = float(value) if value else 0
+                        if share_amount > 0:
+                            share = ExpenseShare(
+                                expense_id=expense.id,
+                                user_id=user_id,
+                                share_amount=share_amount,
+                                is_paid=False
+                            )
+                            db.session.add(share)
+        
+        db.session.commit()
+        flash('Expense updated successfully.', 'success')
+        return redirect(url_for('main.dashboard'))
+    
+    return render_template('edit_expense.html', expense=expense, flatmates=User.query.filter_by(flat_id=current_user.flat_id).all())

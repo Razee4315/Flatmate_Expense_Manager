@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Expense{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit Expense
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="expenseForm" novalidate>
+                    <!-- Basic Info Section -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Basic Information</h6>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-pen"></i></span>
+                                <input type="text" class="form-control" id="description" name="description" required
+                                       placeholder="e.g., Groceries from Walmart" minlength="3"
+                                       value="{{ expense.description }}">
+                                <div class="invalid-feedback">
+                                    Please provide a description (at least 3 characters).
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="amount" class="form-label">Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" class="form-control" id="amount" name="amount" required
+                                           placeholder="0.00" min="0.01" value="{{ expense.amount }}">
+                                    <div class="invalid-feedback">
+                                        Please enter a valid amount greater than 0.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select a category</option>
+                                        <option value="Groceries" data-icon="shopping-cart" {% if expense.category == 'Groceries' %}selected{% endif %}>Groceries</option>
+                                        <option value="Rent" data-icon="home" {% if expense.category == 'Rent' %}selected{% endif %}>Rent</option>
+                                        <option value="Utilities" data-icon="bolt" {% if expense.category == 'Utilities' %}selected{% endif %}>Utilities</option>
+                                        <option value="Internet" data-icon="wifi" {% if expense.category == 'Internet' %}selected{% endif %}>Internet</option>
+                                        <option value="Entertainment" data-icon="film" {% if expense.category == 'Entertainment' %}selected{% endif %}>Entertainment</option>
+                                        <option value="Transportation" data-icon="car" {% if expense.category == 'Transportation' %}selected{% endif %}>Transportation</option>
+                                        <option value="Food" data-icon="utensils" {% if expense.category == 'Food' %}selected{% endif %}>Food & Dining</option>
+                                        <option value="Others" data-icon="ellipsis-h" {% if expense.category == 'Others' %}selected{% endif %}>Others</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select a category.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Splitting Section -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Expense Sharing</h6>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_shared" name="is_shared"
+                                       {% if expense.is_shared %}checked{% endif %}>
+                                <label class="form-check-label" for="is_shared">Split with flatmates?</label>
+                            </div>
+                        </div>
+
+                        <div id="split_details" class="mb-3" {% if not expense.is_shared %}style="display: none;"{% endif %}>
+                            <div class="mb-3">
+                                <label class="form-label d-block">Split Type</label>
+                                <div class="btn-group" role="group">
+                                    <input type="radio" class="btn-check" name="split_type" id="split_equal" value="equal" checked>
+                                    <label class="btn btn-outline-primary" for="split_equal">
+                                        <i class="fas fa-equals me-1"></i>Equal Split
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="split_type" id="split_custom" value="custom">
+                                    <label class="btn btn-outline-primary" for="split_custom">
+                                        <i class="fas fa-sliders-h me-1"></i>Custom Split
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="equal_split">
+                                        {% for flatmate in flatmates %}
+                                        {% if flatmate.id != current_user.id %}
+                                        <div class="form-check">
+                                            <input class="form-check-input member-checkbox" type="checkbox" 
+                                                   name="members" value="{{ flatmate.id }}" 
+                                                   id="member_{{ flatmate.id }}"
+                                                   data-name="{{ flatmate.username }}"
+                                                   {% if flatmate.id in expense.shares|map(attribute='user_id')|list %}checked{% endif %}>
+                                            <label class="form-check-label" for="member_{{ flatmate.id }}">
+                                                {{ flatmate.username }}
+                                            </label>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+
+                                    <div id="custom_split" class="d-none">
+                                        {% for flatmate in flatmates %}
+                                        {% if flatmate.id != current_user.id %}
+                                        <div class="mb-2">
+                                            <label class="form-label">{{ flatmate.username }}</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" step="0.01" class="form-control custom-share"
+                                                       name="custom_share_{{ flatmate.id }}" 
+                                                       id="custom_share_{{ flatmate.id }}"
+                                                       placeholder="0.00" disabled
+                                                       value="{% for share in expense.shares %}{% if share.user_id == flatmate.id %}{{ share.share_amount }}{% endif %}{% endfor %}">
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Expense Summary</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <p class="mb-1"><strong>Total Amount:</strong> <span id="preview_amount">$0.00</span></p>
+                                        <p class="mb-1"><strong>Category:</strong> <span id="preview_category">-</span></p>
+                                        <p class="mb-1"><strong>Split Type:</strong> <span id="preview_split_type">Equal</span></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <p class="mb-1"><strong>Your Share:</strong> <span id="preview_your_share">$0.00</span></p>
+                                        <p class="mb-1"><strong>Split With:</strong> <span id="preview_members">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash-alt me-1"></i>Delete
+                        </button>
+                        <div>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Expense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this expense? This action cannot be undone.</p>
+                <p class="mb-0"><strong>Description:</strong> {{ expense.description }}</p>
+                <p class="mb-0"><strong>Amount:</strong> ${{ "%.2f"|format(expense.amount) }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('main.delete_expense', expense_id=expense.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/expense.js') }}"></script>
+{% endblock %}
