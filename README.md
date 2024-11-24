@@ -91,3 +91,8 @@ This project is open source and available under the [MIT License](LICENSE).
 
 - GitHub: [@Razee4315](https://github.com/Razee4315)
 
+## Latest Updates
+- Added expense editing and deletion functionality
+- Improved dashboard with real-time expense tracking
+- Enhanced user interface for better expense management
+- Added comprehensive expense splitting features
